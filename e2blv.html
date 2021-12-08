@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<!--
+BSD 3-Clause License
+
+Copyright (c) 2021, stimmingexperiments
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+<html>
+
+<head>
+<title>E2B Lv Style Control</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+<style>
+:root {
+    --a-color: #F4378A;
+    --b-color: #00A2FD;
+    --bg-color-top:#121212;
+    --bg-color-bottom: #1E1E1E;
+    --border-color: #404149;
+    --msg-color: #FFFF00;
+    --text-color: #6A6F71;
+}
+
+* {
+    box-sizing: border-box;
+    cursor: default;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+html {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    background: var(--bg-color-top);
+    color: var(--text-color);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
+.nick, .message {
+    padding: 5px;
+    position: absolute;
+    text-align: center;
+    width: 100%;
+}
+
+.message {
+    color: var(--msg-color);
+    top: 50px;
+}
+
+.visualizer {
+    height: 33%;
+    padding: 5px 5px 5px 0;
+}
+
+svg {
+    display: none;
+    height: 100%;
+    width: 100%;
+}
+
+.connected svg {
+    display: block;
+}
+
+path {
+    fill: none;
+    stroke-width: 4px;
+}
+
+path.pathA {
+    stroke: var(--a-color);
+}
+
+path.pathB {
+    stroke: var(--b-color);
+}
+
+circle.pathA {
+    fill: var(--a-color);
+}
+
+circle.pathB {
+    fill: var(--b-color);
+}
+
+.visualizer, .controls > div {
+    margin: auto;
+    max-width: 500px;
+    outline: 1px solid var(--border-color);
+}
+
+.controls {
+    background: var(--bg-color-bottom);
+    border-top: 1px solid var(--border-color);
+    height: 67%;
+}
+
+.controlsA, .controlsB {
+    white-space: nowrap;
+}
+
+.controls > div {
+    display: table;
+    height: 100%;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.controls > div > div {
+    display: table-cell;
+    vertical-align: top;
+}
+
+.controlsButtons {
+    padding-top: 15px;
+    border-left: 1px solid var(--border-color);
+    text-align: center;
+    width: 100px;
+}
+
+.controls > div > div > div:first-child {
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px;
+    text-align: center;
+}
+
+.range, .controlsButtons div {
+    font-size: 14px;
+}
+
+input[type="range"] {
+    -webkit-appearance: none !important;
+    background: var(--border-color);
+    border-radius: 5px;
+    height: 5px;
+    margin: 50vh 0 0 50%;
+    pointer-events: none;
+    transform: rotate(270deg);
+    transform-origin: top left;
+    width: 45vh;
+}
+
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    background: var(--border-color);
+    border: 0;
+    border-radius: 20px;
+    cursor: grab;
+    height: 40px;
+    width: 40px;
+}
+
+.connected input[type=range]::-webkit-slider-thumb {
+    pointer-events: auto;
+}
+
+input[type=range]::-moz-range-thumb {
+    background: var(--border-color);
+    border: 0;
+    border-radius: 20px;
+    cursor: grab;
+    height: 40px;
+    pointer-events: auto;
+    width: 40px;
+}
+
+.connected input[type=range]::-moz-range-thumb {
+    pointer-events: auto;
+}
+
+.connected input[type=range][name="A"]::-webkit-slider-thumb {
+    background: var(--a-color);
+}
+
+.connected input[type=range][name="B"]::-webkit-slider-thumb {
+    background: var(--b-color);
+}
+
+.connected input[type=range][name="A"]::-moz-range-thumb {
+    background: var(--a-color);
+}
+
+.connected input[type=range][name="B"]::-moz-range-thumb {
+    background: var(--b-color);
+}
+
+button {
+    -webkit-tap-highlight-color: transparent;
+    background: transparent;
+    border-radius: 30px;
+    border: 2px solid var(--border-color);
+    color: var(--text-color);
+    display: block;
+    font-size: 13.33px;
+    height: 60px;
+    margin: 0 auto 20px auto;
+    padding: 10px;
+    width: 60px;
+}
+
+.connected button {
+    cursor: pointer;
+}
+
+.connected button.on {
+    border-color: var(--a-color);
+    color: var(--a-color);
+}
+
+</style>
+</head>
+
+<body>
+    <div class="nick"></div>
+    <div class="message"></div>
+    <div class="visualizer">
+        <svg>
+            <path class="pathA"></path>
+            <circle class="pathA" cx="-100" cy="-100" r="6" />
+            <path class="pathB"></path>
+            <circle class="pathB" cx="-100" cy="-100" r="6" />
+        </svg>
+    </div>
+    <div class="controls">
+        <div>
+            <div class="controlsA">
+                <div>
+                    <span class="labelA">A</span>: <span class="valueA">0</span>%<br />
+                    <span class="range">Range: <span class="rangeA">10-20</span>%</span>
+                </div>
+                <div>
+                    <input type="range" min="0" max="100" name="A" value="0" />
+                </div>
+            </div>
+            <div class="controlsB">
+                <div>
+                    <span class="labelB">B</span>: <span class="valueB">0</span>%<br />
+                    <span class="range">Range: <span class="rangeB">10-20</span>%</span>
+                </div>
+                <div>
+                    <input type="range" min="0" max="100" name="B" value="0" />
+                </div>
+            </div>
+            <div class="controlsButtons">
+                <button name="float">Float</button>
+                <button name="loop">Loop</button>
+                <button name="minRange">Min Range</button>
+                <button name="maxRange">Max Range</button>
+                <div>
+                    A: <span class="unitA">0</span>%<br />
+                    B: <span class="unitB">0</span>%<br />
+                    Pwr: <span class="unitPower">D</span><br />
+                    Bat: <span class="unitBattery">Mains</span><br />
+                    Mode: <span class="unitMode">Continuous</span><br />
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let [estimKey, ...params] = window.location.search.substring(1).split('&'),
+        msg = document.querySelector('.message'),
+        msgTimeout = null,
+        ws = null,
+        wsConnected = false,
+        wsReconnect = null,
+        wsAllowReconnect = true,
+        wsLastSent = {
+            A: '',
+            B: ''
+        }
+        wsLastUnitStatus = +new Date(),
+        customCmdsEnabled = false;
+
+    if (params.includes('noa')) {
+        document.querySelectorAll('.controlsA, .pathA').forEach(el => {
+            el.style.display = 'none';
+        });
+    } else if (params.includes('nob')) {
+        document.querySelectorAll('.controlsB, .pathB').forEach(el => {
+            el.style.display = 'none';
+        });
+    }
+
+    params = new URLSearchParams(window.location.search);
+    ['A', 'B'].forEach(label => {
+        let value = params.get('label' + label.toLowerCase());
+        if (value) {
+            document.querySelector('.label' + label).innerText = value.substring(0, 9);
+        }
+    });
+
+    let lastSetMessage = '';
+    let setMessage = function(value, timeout) {
+        clearTimeout(msgTimeout);
+        msg.innerText = value;
+        if (value && value != lastSetMessage) console.log(value);
+        if (timeout) msgTimeout = setTimeout(() => setMessage(''), timeout);
+        lastSetMessage = value;
+    }
+
+    let wsConnect = function() {
+        if (!estimKey) {
+            setMessage('A connection key is required');
+            return;
+        }
+
+        setMessage('Connecting to ' + estimKey);
+        ws = new WebSocket('wss://e-stim.online:57847');
+        ws.onopen = function(e) {
+            ws.send(';connect=' + estimKey);
+        };
+        ws.onclose = function(e) {
+            wsConnected = false;
+            document.body.classList.remove('connected');
+            clearTimeout(wsReconnect);
+            if (wsAllowReconnect) wsReconnect = setTimeout(wsConnect, 2000);
+        };
+        ws.onerror = function(e) {
+            setMessage('Error: ' + e.data);
+            ws.onclose();
+        };
+        ws.closeNoWait = function(resetSeries) {
+            ws.send(';quit');
+            ws.close();
+            ws.onclose();
+            if (resetSeries) {
+                Object.keys(series).forEach(k => series[k] = [0]);
+            }
+        }
+        ws.onmessage = function(e) {
+            if (!e.data.startsWith(';')) {
+                let data = e.data.trim().split(':'),
+                    parsed = {},
+                    newFormat = data.length == 13,
+                    values = [];
+                if (newFormat) {
+                    values = [
+                        'Battery', 'A', 'B', 'C', 'D', 'Mode', 'Power', 'Bias', 'Joined', 'Map', 'Warp', 'Ramp', 'Firmware'
+                    ];
+                } else {
+                    values = [
+                        'Battery', 'A', 'B', 'C', 'D', 'Mode', 'Power', 'Joined', 'Firmware'
+                    ];
+                }
+                values.forEach((value, i) => {
+                    parsed[value] = data[i];
+                });
+
+                parsed['Battery'] = Math.round(100 * (parseInt(parsed['Battery']) - 320) / 422);
+                if (parsed['Battery'] > 100) {
+                    parsed['Battery'] = 'Mains'
+                } else if (parsed['Battery'] < 0) {
+                    parsed['Battery'] = 'Off';
+                    setMessage('Unit is plugged in but turned off', 1500);
+                } else {
+                    parsed['Battery'] += '%'
+                }
+
+                ['A', 'B', 'C', 'D'].forEach(key => {
+                    parsed[key] = parseInt(parsed[key]) / 2;
+                });
+
+                parsed['Mode'] = parseInt(parsed['Mode'])
+                if (!newFormat) {
+                    if (parsed['Mode'] >= 11) {
+                        parsed['Mode'] += 3;
+                    } else if (parsed['Mode'] >= 3) {
+                        parsed['Mode'] += 1;
+                    };
+                }
+
+                if (![2, 3, 10, 11, 12, 13].includes(parsed['Mode'])) {
+                    setMessage('Unit should be a continuous style mode such as Continuous, Flo, Throb, Thrust, Cycle, or Twist');
+                }
+
+                parsed['Mode'] = {
+                    0: 'Pulse',
+                    1: 'Bounce',
+                    2: 'Continuous',
+                    3: 'Flo',
+                    4: 'A Split',
+                    5: 'B Split',
+                    6: 'Wave',
+                    7: 'Waterfall',
+                    8: 'Squeeze',
+                    9: 'Milk',
+                    10: 'Throb',
+                    11: 'Thrust',
+                    12: 'Cycle',
+                    13: 'Twist',
+                    14: 'Random',
+                    15: 'Step',
+                    16: 'Training'
+                }[parsed['Mode']];
+
+                Object.entries(parsed).forEach(([key, value]) => {
+                    let el = document.querySelector('.unit' + key);
+                    if (el) el.innerText = value;
+                });
+
+                wsLastUnitStatus = +new Date();
+
+                return;
+            }
+
+            let [code, ...value] = e.data.substring(1).split(':');
+            code = parseInt(code);
+            value = value.join(':');
+
+            if (code == 200) {
+                if (value == 'info:server ping') ws.send(';ping=' + estimKey);
+            } else if (code == 201) {
+                wsConnected = true;
+                document.body.classList.add('connected');
+                setMessage('Connected', 5000);
+                window.onbeforeunload = function() {
+                    ws.closeNoWait();
+                };
+                let [name, version] = value.split(' ');
+                if (name == 'stimmingexperiments') {
+                    if (parseInt(version.split('.')[0]) > 1) {
+                        customCmdsEnabled = true;
+                    }
+                }
+            } else if (code == 202) {
+                setMessage('Remote user disconnected');
+                ws.closeNoWait(true);
+            } else if (code == 203) {
+                // Key received
+            } else if (code == 210) {
+                setMessage('System message: ' + value, 10000);
+            } else if (code == 220) {
+                // Authenticated
+            } else if (code == 230) {
+                document.querySelector('.nick').innerText = value.split('=')[1];
+            } else if (code == 300) {
+                setMessage('Waiting for remote user');
+            } else if (code == 400) {
+                setMessage('Remote user unexpectedly disconnected');
+                ws.closeNoWait(true);
+            } else if (code == 401) {
+                setMessage('Timeout');
+                ws.closeNoWait();
+            } else if (code == 402) {
+                setMessage('Connection key expired');
+                wsAllowReconnect = false;
+                ws.closeNoWait();
+            } else if (code == 403) {
+                // Not authorised
+            } else if (code == 404) {
+                setMessage('Remote user is being controlled by someone else');
+                ws.closeNoWait();
+            } else if (code == 500) {
+                setMessage('Server error');
+                ws.closeNoWait();
+            } else if (code == 701) {
+                setMessage('Power level blocked by remote user', 5000);
+            } else {
+                console.log('Unhandled message:', code, value);
+            }
+        };
+    }
+
+    wsConnect();
+
+    let svg = document.querySelector('svg'),
+        svgHeight = 0,
+        svgWidth = 0,
+        svgPathsHistory = {
+            A: [],
+            B: []
+        };
+        sliders = document.querySelectorAll('input[type="range"]'),
+        buttons = document.querySelectorAll('button'),
+        mode = '',
+        dragging = {
+            A: false,
+            B: false
+        }
+        series = {
+            A: [0],
+            B: [0]
+        },
+        minRanges = {
+            A: parseInt(params.get('minrangea') || 10),
+            B: parseInt(params.get('minrangeb') || 10)
+        }
+        maxRanges = {
+            A: parseInt(params.get('maxrangea') || 20),
+            B: parseInt(params.get('maxrangeb') || 20)
+        },
+        recordingLoop = {
+            A: false,
+            B: false
+        },
+        recordingStartTime = {
+            A: 0,
+            B: 0
+        };
+
+    buttons.forEach(el => {
+        el.addEventListener('click', e => {
+            if (!wsConnected) return;
+            buttons.forEach(el => el.classList.remove('on'));
+            if (mode != el.name) {
+                el.classList.add('on');
+                mode = el.name;
+            } else {
+                mode = '';
+            }
+            if (mode == 'maxRange') {
+                sliders.forEach(el => el.value = maxRanges[el.name]);
+            } else if (mode == 'minRange') {
+                sliders.forEach(el => el.value = minRanges[el.name]);
+            } else {
+                sliders.forEach(el => el.value = 0);
+            }
+            Object.keys(series).forEach(k => series[k] = [0]);
+        });
+    });
+
+    sliders.forEach(el => {
+        ['mousedown', 'touchstart'].forEach(v => {
+            el.addEventListener(v, e => {
+                dragging[el.name] = true;
+                series[el.name] = [];
+            }, {passive: true});
+        });
+        ['mouseup', 'touchend'].forEach(v => {
+            el.addEventListener(v, e => {
+                dragging[el.name] = false;
+                if (!['float', 'maxRange', 'minRange'].includes(mode)) e.target.value = 0;
+            }, {passive: true});
+        });
+    });
+
+    setInterval(function() {
+        Object.entries(series).forEach(([channel, values]) => {
+            let value;
+            if (mode == 'loop' && !dragging[channel]) {
+                let index = Math.round((+new Date() - recordingStartTime[channel]) / 250) % values.length;
+                value = values[index];
+            } else {
+                value = values[values.length - 1];
+            }
+            value = value || 0;
+
+            document.querySelector('.value' + channel).innerText = value;
+            document.querySelector('.range' + channel).innerText = minRanges[channel] + '-' + maxRanges[channel];
+
+            let svgHeight = svg.height.baseVal.value,
+                svgWidth = svg.width.baseVal.value,
+                capRadius = 6,
+                pxPerInterval = 20;
+
+            svgPathsHistory[channel].unshift(value);
+            svgWidth -= capRadius;
+
+            let d = [],
+                sliceAtIndex = null;
+
+            svgPathsHistory[channel].forEach((v, i) => {
+                let x = svgWidth,
+                    y = -capRadius + svgHeight - v / 100 * (svgHeight - capRadius * 2);
+                if (x >= -pxPerInterval) {
+                    d.push(x + ',' + y);
+                    svgWidth -= pxPerInterval;
+                } else {
+                    sliceAtIndex = i;
+                }
+            });
+
+            if (sliceAtIndex) {
+                // Prevent history from growing forever
+                svgPathsHistory[channel] = svgPathsHistory[channel].slice(0, sliceAtIndex);
+            }
+
+            if (d.length) {
+                svg.querySelector('path.path' + channel).setAttribute('d', 'M' + d.join(' L'));
+
+                let circle = svg.querySelector('circle.path' + channel),
+                    xy = d[0].split(',');
+                circle.setAttribute('cx', parseInt(xy[0]));
+                circle.setAttribute('cy', parseInt(xy[1]));
+            }
+        });
+    }, 100);
+
+    setInterval(function() {
+        sliders.forEach(el => {
+            if (mode.endsWith('Range')) {
+                let value = parseInt(el.value);
+
+                if (mode == 'maxRange') {
+                    if (value <= minRanges[el.name]) {
+                        el.value = minRanges[el.name];
+                    }
+                    maxRanges[el.name] = value;
+                } else {
+                    if (value >= maxRanges[el.name]) {
+                        el.value = maxRanges[el.name];
+                    }
+                    minRanges[el.name] = value;
+                }
+
+                series[el.name] = [0];
+            }
+        });
+    }, 100);
+
+    setInterval(function() {
+        sliders.forEach(el => {
+            let value = 0;
+
+            if (!mode.endsWith('Range')) {
+                value = parseInt(el.value);
+                let baseValue = value > 0 ? minRanges[el.name] : 0;
+                value = baseValue + Math.round(value * (maxRanges[el.name] - baseValue) / 100);
+
+                if (mode == 'loop') {
+                    if (dragging[el.name]) {
+                        if (series[el.name].length == 1 && !series[el.name][0]) {
+                            // Get rid of 0 values at start of loop
+                            series[el.name] = [];
+                        }
+                        if (!recordingLoop[el.name] && value && series[el.name].length >= 2) {
+                            // Ignore initial values as user may have been aiming to start at a higher value
+                            series[el.name] = [];
+                            if (customCmdsEnabled) ws.send(el.name + '200');
+                            recordingLoop[el.name] = true;
+                            recordingStartTime[el.name] = +new Date();
+                        }
+                        series[el.name].push(value);
+                    } else {
+                        if (recordingLoop[el.name]) {
+                            if (customCmdsEnabled) ws.send(el.name + '201');
+                            recordingLoop[el.name] = false;
+                        }
+                        let index = Math.round((+new Date() - recordingStartTime[el.name]) / 250) % series[el.name].length;
+                        value = series[el.name][index];
+                    }
+                } else {
+                    series[el.name] = [value];
+                }
+            }
+
+            if (wsConnected) {
+                let toSend = el.name + value;
+                if (recordingLoop[el.name] || (wsLastSent[el.name] != toSend && (mode != 'loop' || !customCmdsEnabled))) {
+                    if (mode == 'float' && customCmdsEnabled) {
+                        ws.send(el.name + '202');
+                    }
+                    ws.send(el.name + value);
+                    wsLastSent[el.name] = toSend;
+                }
+                if ((+new Date() - wsLastUnitStatus) >= 3000) {
+                    setMessage('No data received for 3s, unit may be paused or unplugged', 1000);
+                }
+            }
+        });
+    }, 250);
+</script>
+</body>
+</html>

@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<!--
+BSD 3-Clause License
+
+Copyright (c) 2020, stimmingexperiments
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+<html>
+
+<head>
+<title>E2B Visualizer</title>
+<meta charset="utf-8">
+
+<style>
+:root {
+    --a-color: #FF0000;
+    --b-color: #00FF00;
+    --triphase-color: #FFFF00;
+    --font: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+}
+
+body {
+    background-color: black;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font);
+    font-size: 16px;
+    margin: 0;
+    height: 100vh;
+    width: 100vw;
+}
+
+#message {
+    margin-top: -25px;
+    position: absolute;
+    top: 50%;
+    text-align: center;
+    width: 100%;
+}
+
+svg {
+    height: 100%;
+    flex: 1;
+    width: 100%;
+}
+
+path {
+    fill: none;
+    mix-blend-mode: screen;
+    stroke-width: 2px;
+}
+
+#path0 {
+    stroke: var(--a-color);
+}
+
+#path1 {
+    stroke: var(--b-color);
+}
+
+#path2 {
+    stroke: var(--triphase-color);
+}
+
+#controls {
+    flex-shrink: 0;
+    padding: 0px 10px 0px 10px;
+    user-select: none;
+    /*
+    The SVG has extra padding so the spikes don't get cut off but 99% of the
+    time it's not needed so we can move the controls up to save some space
+    */
+    margin-top: -15px;
+}
+
+.a, .a input {
+    color: var(--a-color);
+}
+
+.b, .b input {
+    color: var(--b-color);
+}
+
+.triphase {
+    color: var(--triphase-color);
+}
+
+label {
+    padding-right: 10px;
+    white-space: nowrap;
+}
+
+input, select {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-sizing: border-box;
+    color: white;
+    font-family: var(--font);
+    margin: 2px 0;
+}
+
+option {
+    background: black;
+}
+
+input:focus, select:focus {
+    border: 1px solid rgba(255, 255, 255, 1);
+    outline: none;
+}
+
+input, select {
+    height: 25px;
+    padding: 2px 4px;
+}
+
+input {
+    text-align: right;
+    width: 48px;
+}
+
+[disabled] {
+    opacity: 1;
+   -o-appearance: none;
+   -ms-appearance: none;
+   -webkit-appearance: none;
+   -moz-appearance: none;
+   appearance: none;
+}
+
+[type="checkbox"] {
+    display: none;
+}
+
+[type="checkbox"] + span:before {
+    content: '☐ ';
+    font-size: 20px;
+    line-height: 20px;
+}
+
+[type="checkbox"]:checked + span:before {
+    content: '☑ ';
+}
+
+input[disabled] {
+    width: 35px;
+}
+
+input[disabled]::-webkit-inner-spin-button,
+input[disabled]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"][disabled] {
+  -moz-appearance: textfield;
+}
+</style>
+</head>
+
+<body>
+
+<div id="message"></div>
+
+<svg>
+    <path id="path0"></path>
+    <path id="path1"></path>
+    <path id="path2"></path>
+</svg>
+
+<div id="controls">
+    <label class="mode">Mode <select id="mode">
+        <option value="0" selected>Pulse</option>
+        <option value="1">Bounce</option>
+        <option value="2">Continuous</option>
+        <option value="3">Flo</option>
+        <option value="4">A Split</option>
+        <option value="5">B Split</option>
+        <option value="6">Wave</option>
+        <option value="7">Waterfall</option>
+        <option value="8">Squeeze</option>
+        <option value="9">Milk</option>
+        <option value="10">Throb</option>
+        <option value="11">Thrust</option>
+        <option value="12">Cycle</option>
+        <option value="13">Twist</option>
+        <option value="14">Random</option>
+        <option value="15">Step</option>
+        <option value="16">Training</option>
+    </select></label>
+    <label class="a">
+        A <input type="number" id="a" min="0" max="100" value="0" /> %
+    </label>
+    <label class="b">
+        B <input type="number" id="b" min="0" max="100" value="0" /> %
+    </label>
+    <label class="triphase">
+        <input type="checkbox" id="triphase" /><span>Triphase</span>
+    </label>
+    <label>C <input type="number" id="c" min="1" max="99" value="50" /></label>
+    <label>D <input type="number" id="d" min="1" max="99" value="50" /></label>
+    <label>Warp <select id="warp">
+        <option value="0" selected>x1</option>
+        <option value="1">x2</option>
+        <option value="2">x4</option>
+        <option value="3">x8</option>
+        <option value="4">x16</option>
+        <option value="5">x32</option>
+    </select></label>
+</div>
+
+<script>
+// URL parameters:
+// file = read the 2B status from a file (uses XMLHttpRequest)
+// hide-controls = hides the form at the bottom of the page
+// speed = make the visuals move across the screen faster or slower
+// triphase = turn on triphase
+const params = new URLSearchParams(location.search);
+
+// FPS = How often the image is updated indepdenent of monitor refresh rate
+// PX_PER_S = How fast the visual moves across the screen
+// SPIKE_SIZE = Max size of spikes
+const FPS = 60,
+      PX_PER_S = 60 * (parseFloat(params.get('speed')) || 1),
+      SPIKE_SIZE = 10;
+
+function _feel(power, feel) {
+    // A visual hack so the line never goes completely smooth
+    feel = Math.max(feel, 3);
+    return [power, (power > 0) ? feel / 100 * SPIKE_SIZE : 0];
+}
+
+function _continuous(power, feel_low, feel_high, seconds, twist) {
+    let visual = [],
+        feel = 0,
+        feel_range = Math.abs(feel_high - feel_low),
+        width = PX_PER_S * (seconds || 1);
+
+    feel_low = Math.min(feel_low, feel_high);
+
+    let twists = 0;
+
+    for (let i = 0; i < width; i++) {
+        if (twist && twists > 8) {
+            feel = feel_low;
+        } else {
+            feel = feel_low + (feel_range / width * i);
+        }
+        visual.push(_feel(power, feel));
+        twists += 1;
+        if (twists > 16) twists = 0;
+    }
+
+    return visual;
+}
+
+function _pulse(power, speed, feel, warp, exclude_downtime) {
+    // Time warp x1
+    // Speed  1 = 10 per 20s
+    // Speed 10 = 10 per 15s
+
+    // Time warp x2
+    // Speed  1 = 5 per 20s
+    // Speed 10 = 5 per 15s
+    // Speed 20 = 5 per 11s
+    // Speed 30 = 5 per 9s
+
+    // Time warp x32
+    // Speed  1 =  5 per 62s (12.4.s)
+    // Speed 10 =  5 per 45s (9.0s)
+    // Speed 20 = 10 per 69s (6.9s)
+    // Speed 30 = 10 per 53s (5.3s)
+    // Speed 40 = 10 per 40s (4.0s)
+    // Speed 50 = 10 per 30s (3.0s)
+    // Speed 60 = 10 per 20s (2.0s)
+    // Speed 70 = 10 per 15s (1.5s)
+    // Speed 80 = 10 per 8s  (0.8s)
+    // Speed 90 = 20 per 8s  (0.4s)
+
+    // It seems like the slowest setting is approximately 1s on / 1s off and
+    // then gets faster on a squared curve.
+
+    let visual = [],
+        constant = 1,
+        pulse_time = (1 - Math.sqrt(speed / 100)) * constant * (warp + 1);
+
+    visual = visual.concat(_continuous(power, feel, feel, pulse_time));
+
+    // Random mode uses separate timings for up and down time
+    if (!exclude_downtime) {
+        visual = visual.concat(_continuous(0, feel, feel, pulse_time));
+    }
+
+    return visual;
+}
+
+function pulse(a, b, c, d, warp) {
+    return [
+        _pulse(a, c, d, warp),
+        _pulse(b, c, d, warp)
+    ];
+}
+
+function bounce(a, b, c, d, warp) {
+    let visuals = [
+        _pulse(a, c, d, warp),
+        _pulse(b, c, d, warp)
+    ];
+    visuals[1].reverse();
+    return visuals;
+}
+
+function continuous(a, b, c, d, warp) {
+    return [
+        _continuous(a, c, c),
+        _continuous(b, c, c)
+    ];
+}
+
+function flo(a, b, c, d, warp) {
+    return [
+        _continuous(a, c, c),
+        _continuous(b, d, d)
+    ];
+}
+
+function asplit(a, b, c, d, warp) {
+    return [
+        _pulse(a, c, d, warp),
+        _continuous(b, d, d)
+    ];
+}
+
+function bsplit(a, b, c, d, warp) {
+    return [
+        _continuous(a, d, d),
+        _pulse(b, c, d, warp)
+    ];
+}
+
+function _wave(power, speed, feel, warp) {
+    // Time warp x1
+    // Speed  1 = 9s to reach 10%
+    // Speed 10 = 8s to reach 10%
+    // Speed 20 = 6s to reach 10%
+    // Speed 30 = 4s to reach 10%
+    // Speed 40 = 3s to reach 10%
+    // Speed 50 = 2s to reach 10%
+
+    // Time warp x4
+    // Speed  1 = 35s to reach 10%
+    // Speed 10 = 25s to reach 10%
+    // Speed 20 = 20s to reach 10%
+    // Speed 30 = 15s to reach 10%
+    // Speed 40 = 10s to reach 10%
+    // Speed 50 = 8s to reach 10%
+
+    // It seems like the slowest setting is approximately 1s per 1% and then
+    // gets faster on a squared curve.
+
+    let visual = [],
+        constant = 1,
+        wave_time = (1 - Math.sqrt(speed / 100)) * constant * (warp + 1),
+        width = wave_time * PX_PER_S * (power || 1);
+
+    for (let i = 0; i <= width; i++) {
+        visual.push(_feel(power * i / width, feel))
+    }
+
+    return visual;
+}
+
+function wave(a, b, c, d, warp) {
+    return [
+        _wave(a, c, d, warp),
+        _wave(b, c, d, warp)
+    ];
+}
+
+function waterfall(a, b, c, d, warp) {
+    let visuals = wave(a, b, c, d, warp);
+    visuals.forEach((w, i) => {
+        visuals[i] = visuals[i].concat(visuals[i].slice().reverse())
+    });
+    return visuals;
+}
+
+function _squeeze(power, speed, feel, warp) {
+    // 10 = 1 pulse
+    // 20 = 6 pulses
+    // 30 = 11 pulses
+    // 40 = 16 pulses
+
+    // The validation is sloppy and you can get past it but it seems like the
+    // lowest speed setting is supposed to be 10
+
+    // It seems to be 1 extra pulse per 2 speed
+
+    let visual = [],
+        num_pulses = Math.round((Math.max(speed, 10) - 10) / 2) + 1
+
+    for (let i = 99; i > 0; i -= 99 / num_pulses) {
+        visual = visual.concat(_pulse(power, i, feel, warp));
+    }
+
+    return visual;
+}
+
+function squeeze(a, b, c, d, warp) {
+    return [
+        _squeeze(a, c, d, warp),
+        _squeeze(b, c, d, warp)
+    ];
+}
+
+function milk(a, b, c, d, warp) {
+    // This doesn't match the manual's description at all, especially since
+    // both channels are clearly in sync. I think it's the same as squeeze but
+    // also comes back down.
+
+    let visuals = squeeze(a, b, c, d, warp);
+    visuals.forEach((w, i) => {
+        visuals[i] = visuals[i].concat(visuals[i].slice().reverse())
+    });
+    return visuals;
+}
+
+function throb(a, b, c, d, warp, twist) {
+    // Timings:
+    //  1-99 = 24s
+    // 50-99 = 12s
+    // 75-99 = 6s
+
+    // It seems to be about 0.25s per step
+
+    // Warp doesn't seem to do anything here despite expectations
+    let length = (Math.abs(d - c) / 4);
+    return [
+        _continuous(a, c, d, length, twist),
+        _continuous(b, c, d, length, twist)
+    ];
+}
+
+function thrust(a, b, c, d, warp) {
+    // Same as throb but comes back down
+    let visuals = throb(a, b, c, d, warp);
+    visuals.forEach((w, i) => {
+        visuals[i] = visuals[i].concat(visuals[i].slice().reverse())
+    });
+    return visuals;
+}
+
+function twist(a, b, c, d, warp) {
+    // I think this is the same as throb but perhaps drops D to low feel
+    // between each step?
+    return throb(a, b, c, d, warp, true);
+}
+
+function cycle(a, b, c, d, warp) {
+    // I think this is a waterfall like version of twist?
+    let visuals = twist(a, b, c, d, warp);
+    visuals.forEach((w, i) => {
+        visuals[i] = visuals[i].concat(visuals[i].slice().reverse())
+    });
+    return visuals;
+}
+
+// Needs to be static or the visual will be different every frame
+var RANDOM_TABLE = [];
+function update_random_table() {
+    RANDOM_TABLE = [];
+    for (let i = 0; i < 100; i++) {
+        RANDOM_TABLE.push(Math.random());
+    }
+}
+update_random_table();
+
+function random(a, b, c, d, warp) {
+    // It seems to be pulse mode with speed randomly picked between 1 and C.
+    // The speed for the up and down time are chosen separately which can cause
+    // bursts of pulses or long waits.
+
+    let visuals = [[], []];
+    for (let i = 0; i < 100; i++) {
+        let randomness = Math.floor((RANDOM_TABLE[i] * c)) + 1;
+        visuals[0] = visuals[0].concat(
+            _pulse((i % 2) ? a : 0, randomness, d, warp, true)
+        );
+        visuals[1] = visuals[1].concat(
+            _pulse((i % 2) ? b : 0, randomness, d, warp, true)
+        );
+    }
+
+    return visuals;
+}
+
+function _step(power, speed, feel, warp, training) {
+    // Time warp x1
+    // Speed  1 = 56s to reach 5%
+    // Speed 10 = 41s to reach 5%
+    // Speed 20 = 31s to reach 5%
+    // Speed 30 = 25s to reach 5%
+    // Speed 40 = 18s to reach 5%
+    // Speed 50 = 14s to reach 5%
+
+    // Interestingly you can clearly feel "half" steps, e.g. there are 10 steps
+    // to reach 5%
+
+    // Looks like another squared curve with the start value being about 56s
+
+    let visual = [],
+        current = 0,
+        constant = 56,
+        total_time = (1 - Math.sqrt(speed / 100)) * constant * (warp + 1),
+        step_size = (training && power >= 12) ? power / 12 : 1,
+        num_steps = (power / step_size) || 1,
+        step_time = (total_time / num_steps);
+
+    while (current <= power) {
+        visual = visual.concat(_continuous(current, feel, feel, step_time));
+        current += step_size;
+    }
+
+    return visual;
+}
+
+function step(a, b, c, d, warp) {
+    return [
+        _step(a, c, d, warp),
+        _step(b, c, d, warp)
+    ];
+}
+
+function training(a, b, c, d, warp) {
+    // Total time to reach the destination power is the same as step
+
+    return [
+        _step(a, c, d, warp, true),
+        _step(b, c, d, warp, true)
+    ];
+}
+
+var MODES = [
+    pulse,
+    bounce,
+    continuous,
+    flo,
+    asplit,
+    bsplit,
+    wave,
+    waterfall,
+    squeeze,
+    milk,
+    throb,
+    thrust,
+    cycle,
+    twist,
+    random,
+    step,
+    training
+];
+
+var message = document.querySelector('#message'),
+    svg = document.querySelector('svg'),
+    controls = document.querySelector('#controls'),
+    mode = controls.querySelector('#mode'),
+    a = controls.querySelector('#a'),
+    b = controls.querySelector('#b'),
+    c = controls.querySelector('#c'),
+    d = controls.querySelector('#d'),
+    warp = controls.querySelector('#warp'),
+    triphase = controls.querySelector('#triphase'),
+    visual_time = 0,
+    paths = [],
+    drawn = false,
+    status_file = params.get('file'),
+    error_msg = '',
+    cached_visuals;
+
+controls.querySelectorAll('input, select').forEach(el => {
+    el.addEventListener('change', e => {
+        cached_visuals = null;
+        update_random_table();
+    });
+});
+
+if (params.has('triphase')) {
+    triphase.checked = true;
+} else if (status_file) {
+    triphase.parentNode.style.display = 'none';
+}
+
+if (params.has('hide-controls')) controls.style.display = 'none';
+
+function validate_inputs() {
+    controls.querySelectorAll('input').forEach(el => {
+        if (el.value > parseInt(el.max)) el.value = el.max;
+        if (el.value < parseInt(el.min)) el.value = el.min;
+    });
+}
+
+function create_paths() {
+    validate_inputs();
+
+    let height = svg.height.baseVal.value - SPIKE_SIZE * 4,
+        width = svg.width.baseVal.value,
+        y_offset = height + SPIKE_SIZE * 2;
+
+    if (!cached_visuals) {
+        cached_visuals = MODES[mode.value](
+            parseInt(a.value|| 0),
+            parseInt(b.value|| 0),
+            parseInt(c.value|| 0),
+            parseInt(d.value|| 0),
+            parseInt(warp.value|| 1)
+        );
+    }
+
+    message.innerHTML = error_msg;
+
+    let visuals = cached_visuals.slice();
+    visuals.push([]);
+
+    paths = [];
+
+    visuals.forEach((visual, i) => {
+        let d = [];
+
+        for (let x = 0; x < width; x++) {
+            let y,
+                feel;
+
+            if (i < 2) {
+                y = visual[(x + Math.round(visual_time)) % visual.length];
+                feel = y[1];
+                y = y[0];
+                if (visuals[2][x]) {
+                    visuals[2][x] = [
+                        visuals[2][x][0] + y,
+                        visuals[2][x][1] + feel,
+                    ];
+                } else {
+                    visuals[2][x] = [y, feel];
+                }
+            } else {
+                y = visual[x][0];
+                feel = visual[x][1];
+            }
+
+            // This creates the central line
+            d.push(x + "," + (y_offset - (y / 100 * height / 2)));
+
+            // This creates the spikes
+            y = y + (Math.random() - 0.5) * feel;
+            d.push(x + "," + (y_offset - (y / 100 * height / 2)));
+        }
+
+        if (d.length && (i < 2 || triphase.checked)) {
+            paths.push('M' + d.join(' L'));
+        } else {
+            paths.push('');
+        }
+    });
+
+    visual_time += PX_PER_S / FPS;
+    if (visual_time >= Number.MAX_SAFE_INTEGER) {
+        visual_time = 0;
+    }
+
+    drawn = false;
+}
+
+setInterval(create_paths, 1000 / FPS);
+
+function animate() {
+    if (!drawn) {
+        paths.forEach((path, i) => {
+            svg.querySelector('#path' + i).setAttribute('d',  path)
+        })
+        drawn = false;
+    }
+    requestAnimationFrame(animate);
+}
+
+animate();
+
+var last_status_file_data;
+
+function read_status_file() {
+    let x =  new XMLHttpRequest();
+
+    x.onload = function() {
+        let data = x.responseText,
+            status = data.split(':'),
+            status_without_battery = status.slice(1).join(':'),
+            valid_errors = [
+                // This is potentially a dangerous file inclusion bug that
+                // could leak error messages that may include paths with
+                // usernames so only allow known error messages
+                '2B not responding (cable unplugged or menu open)',
+                '2B disconnected',
+                '2B connected but turned off'
+            ];
+
+        // The battery level goes up and down all the time so we should
+        // ignore it
+        if (status_without_battery === last_status_file_data) {
+            return;
+        }
+
+        if ([9, 13].indexOf(status.length) < 0) {
+            status = [0, 0, 0, 100, 100, 0, 0, 0, 0, 0, 0, 0, ''];
+            if (x.status === 200 && valid_errors.indexOf(data) > -1) {
+                error_msg = data;
+            } else {
+                error_msg = 'Error loading status file';
+            }
+        } else {
+            error_msg = '';
+        }
+
+        for (let i = 0; i < status.length; i++) {
+            status[i] = parseInt(status[i]);
+            if (i >= 1 && i <= 4) {
+                status[i] = parseInt(status[i] / 2);
+            }
+        }
+
+        if (status.length === 9) {
+            if (status[5] >= 11) {
+                status[5] += 3;
+            } else if (status[5] >= 3) {
+                status[5] += 1;
+            }
+        }
+
+        a.value = status[1];
+        b.value = status[2];
+        c.value = status[3];
+        d.value = status[4];
+        mode.value = status[5];
+
+        if (status.length === 13) {
+            warp.value = status[10];
+        }
+
+        last_status_file_data = status_without_battery;
+        cached_visuals = null;
+    }
+
+    x.onerror = function(e) {
+        error_msg = 'Error loading status file';
+    }
+
+    // Needs to be cache busted for OBS
+    x.open('GET', status_file + '?' + +new Date());
+    x.send();
+}
+
+if (status_file) {
+    controls.querySelectorAll('input, select').forEach(el => {
+        el.disabled = true;
+    })
+    setInterval(read_status_file, 250)
+};
+</script>
+
+</body>
+
+</html>
