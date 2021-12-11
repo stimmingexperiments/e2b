@@ -41,7 +41,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 :root {
     --a-color: #F4378A;
     --b-color: #00A2FD;
-    --bg-color-top:#121212;
+    --bg-color: #000000;
+    --bg-color-top: #121212;
     --bg-color-bottom: #1E1E1E;
     --border-color: #404149;
     --msg-color: #FFFF00;
@@ -61,12 +62,14 @@ html {
 }
 
 body {
-    background: var(--bg-color-top);
+    background: var(--bg-color);
     color: var(--text-color);
     font-family: Arial, Helvetica, sans-serif;
     font-size: 16px;
     height: 100%;
-    margin: 0;
+    margin: 0 auto;
+    max-width: 500px;
+    outline: 1px solid var(--border-color);
     overflow: hidden;
 }
 
@@ -79,10 +82,12 @@ body {
 
 .message {
     color: var(--msg-color);
+    left: 0;
     top: 50px;
 }
 
 .visualizer {
+    background: var(--bg-color-top);
     height: 33%;
     padding: 5px 5px 5px 0;
 }
@@ -120,12 +125,9 @@ circle.pathB {
 
 .visualizer, .controls > div {
     margin: auto;
-    max-width: 500px;
-    outline: 1px solid var(--border-color);
 }
 
 .controls {
-    background: var(--bg-color-bottom);
     border-top: 1px solid var(--border-color);
     height: 67%;
 }
@@ -135,6 +137,7 @@ circle.pathB {
 }
 
 .controls > div {
+    background: var(--bg-color-bottom);
     display: table;
     height: 100%;
     table-layout: fixed;
@@ -147,8 +150,8 @@ circle.pathB {
 }
 
 .controlsButtons {
-    padding-top: 15px;
     border-left: 1px solid var(--border-color);
+    padding-top: 15px;
     text-align: center;
     width: 100px;
 }
