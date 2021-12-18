@@ -334,7 +334,7 @@ button {
         msg.innerText = value;
         if (value && value != lastSetMessage) console.log(value);
         if (timeout) msgTimeout = setTimeout(() => setMessage(''), timeout);
-        lastSetMessage = value;
+        if (value) lastSetMessage = value;
     }
 
     let wsConnect = function() {
@@ -387,19 +387,19 @@ button {
 
                 parsed['Battery'] = Math.round(100 * (parseInt(parsed['Battery']) - 320) / 422);
                 if (parsed['Battery'] > 100) {
-                    parsed['Battery'] = 'Mains'
+                    parsed['Battery'] = 'Mains';
                 } else if (parsed['Battery'] < 0) {
                     parsed['Battery'] = 'Off';
                     setMessage('Unit is plugged in but turned off', 1500);
                 } else {
-                    parsed['Battery'] += '%'
+                    parsed['Battery'] += '%';
                 }
 
                 ['A', 'B', 'C', 'D'].forEach(key => {
                     parsed[key] = parseInt(parsed[key]) / 2;
                 });
 
-                parsed['Mode'] = parseInt(parsed['Mode'])
+                parsed['Mode'] = parseInt(parsed['Mode']);
                 if (!newFormat) {
                     if (parsed['Mode'] >= 11) {
                         parsed['Mode'] += 3;
@@ -546,11 +546,15 @@ button {
                 mode = el.name;
             } else {
                 mode = '';
+                setMessage('');
             }
-            if (mode == 'maxRange') {
-                sliders.forEach(el => el.value = maxRanges[el.name]);
-            } else if (mode == 'minRange') {
-                sliders.forEach(el => el.value = minRanges[el.name]);
+            if (mode.endsWith('Range')) {
+                setMessage('Set ' + mode.substring(0, 3) + ' power range of sliders, press button again to exit')
+                if (mode == 'maxRange') {
+                    sliders.forEach(el => el.value = maxRanges[el.name]);
+                } else {
+                    sliders.forEach(el => el.value = minRanges[el.name]);
+                }
             } else {
                 sliders.forEach(el => el.value = 0);
             }
@@ -599,6 +603,18 @@ button {
                 sliceAtIndex = null;
 
             svgPathsHistory[channel].forEach((v, i) => {
+                // Jumps >= 20% that are held for less than 1s will set off a warning
+                let spikePowerThreshold = 20,
+                    spikeInterval = 10; // At a 100ms interval this is 1 second
+                if (!i && v < svgPathsHistory[channel][1]) {
+                    for (let j = 2; j <= spikeInterval; j++) {
+                        if (!svgPathsHistory[channel][j] || svgPathsHistory[channel][1] - svgPathsHistory[channel][j] >= spikePowerThreshold) {
+                            setMessage('Short spikes are unlikely to be fully felt', 2000);
+                            break;
+                        }
+                    }
+                }
+
                 let x = svgWidth,
                     y = -capRadius + svgHeight - v / 100 * (svgHeight - capRadius * 2);
                 if (x >= -pxPerInterval) {
