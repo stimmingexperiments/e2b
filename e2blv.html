@@ -296,7 +296,8 @@ button {
     </div>
 
 <script>
-    let [estimKey, ...params] = window.location.search.substring(1).split('&'),
+    let estimKey = window.location.search.substring(1).split('&')[0],
+        params = new URLSearchParams(window.location.search),
         msg = document.querySelector('.message'),
         msgTimeout = null,
         ws = null,
@@ -310,21 +311,16 @@ button {
         wsLastUnitStatus = +new Date(),
         customCmdsEnabled = false;
 
-    if (params.includes('noa')) {
-        document.querySelectorAll('.controlsA, .pathA').forEach(el => {
-            el.style.display = 'none';
-        });
-    } else if (params.includes('nob')) {
-        document.querySelectorAll('.controlsB, .pathB').forEach(el => {
-            el.style.display = 'none';
-        });
-    }
-
-    params = new URLSearchParams(window.location.search);
-    ['A', 'B'].forEach(label => {
-        let value = params.get('label' + label.toLowerCase());
-        if (value) {
-            document.querySelector('.label' + label).innerText = value.substring(0, 9);
+    ['A', 'B'].forEach(ch => {
+        let chLower = ch.toLowerCase();
+        if (params.get('no' + chLower) != null) {
+            document.querySelectorAll('.controls' + ch + ', .path' + ch).forEach(el => {
+                el.style.display = 'none';
+            });
+        }
+        let label = params.get('label' + chLower);
+        if (label) {
+            document.querySelector('.label' + ch).innerText = label.substring(0, 9);
         }
     });
 
@@ -493,7 +489,7 @@ button {
                 setMessage('Server error');
                 ws.closeNoWait();
             } else if (code == 701) {
-                setMessage('Power level blocked by remote user', 5000);
+                setMessage('Power level blocked by remote user, reduce max range to match their limit', 5000);
             } else {
                 console.log('Unhandled message:', code, value);
             }
@@ -520,13 +516,17 @@ button {
             A: [0],
             B: [0]
         },
+        maxLevels = {
+            A: Math.min(Math.abs(parseInt(params.get('maxlevela'))), 100) || 100,
+            B: Math.min(Math.abs(parseInt(params.get('maxlevelb'))), 100) || 100
+        },
         minRanges = {
-            A: parseInt(params.get('minrangea') || 10),
-            B: parseInt(params.get('minrangeb') || 10)
+            A: Math.min(Math.min(Math.abs(parseInt(params.get('minrangea'))), 100) || 10, maxLevels['A']),
+            B: Math.min(Math.min(Math.abs(parseInt(params.get('minrangeb'))), 100) || 10, maxLevels['B'])
         }
         maxRanges = {
-            A: parseInt(params.get('maxrangea') || 20),
-            B: parseInt(params.get('maxrangeb') || 20)
+            A: Math.min(Math.min(Math.abs(parseInt(params.get('maxrangea'))), 100) || 20, maxLevels['A']),
+            B: Math.min(Math.min(Math.abs(parseInt(params.get('maxrangeb'))), 100) || 20, maxLevels['B'])
         },
         recordingLoop = {
             A: false,
@@ -549,7 +549,19 @@ button {
                 setMessage('');
             }
             if (mode.endsWith('Range')) {
-                setMessage('Set ' + mode.substring(0, 3) + ' power range of sliders, press button again to exit')
+                let msg = ['Set ' + mode.substring(0, 3) + ' power range of sliders, press button again to exit'],
+                    canRise = false;
+                if (mode.startsWith('max')) {
+                    ['A', 'B'].forEach(ch => {
+                        if (params.get('no' + ch.toLowerCase()) == null) {
+                            let label = document.querySelector('.label' + ch).innerText;
+                            msg.push('Max allowed on ' + label + ' = ' + maxLevels[ch] + '%');
+                            if (maxLevels[ch] < 100) canRise = true;
+                        }
+                    });
+                }
+                if (canRise) msg.push('You can ask the remote user to raise limits');
+                setMessage(msg.join('\n\n'));
                 if (mode == 'maxRange') {
                     sliders.forEach(el => el.value = maxRanges[el.name]);
                 } else {
@@ -566,7 +578,7 @@ button {
         ['mousedown', 'touchstart'].forEach(v => {
             el.addEventListener(v, e => {
                 dragging[el.name] = true;
-                series[el.name] = [];
+                if (mode != 'float') series[el.name] = [0];
             }, {passive: true});
         });
         ['mouseup', 'touchend'].forEach(v => {
@@ -649,6 +661,9 @@ button {
                 if (mode == 'maxRange') {
                     if (value <= minRanges[el.name]) {
                         el.value = minRanges[el.name];
+                    }
+                    if (value > maxLevels[el.name]) {
+                        el.value = maxLevels[el.name];
                     }
                     maxRanges[el.name] = value;
                 } else {
