@@ -36,6 +36,7 @@ import re
 import socket
 import ssl
 import time
+from urllib.parse import urlencode
 
 import serial
 
@@ -442,9 +443,25 @@ def handshake(e2b, sock, key=None):
         send_data(sock, b';setnick=' + nickname.encode('ascii'))
         read_data(sock, b';200:nickname set')
 
-    logger.info(
-        'Link: https://e-stim.online/connect/?' + key.decode('ascii')
-    )
+    if options.lv_mode:
+        link = 'https://stimmingexperiments.github.io/e2b/e2blv.html?' + \
+               key.decode('ascii')
+        query = {}
+        for ch in ('a', 'b'):
+            for attr in (
+                'max_level_', 'label_', 'no_', 'min_range_', 'max_range_'
+            ):
+                value = getattr(options, attr + ch)
+                if value:
+                    if attr == 'max_range_':
+                        value = min(value, getattr(options, 'max_level_' + ch))
+                    query[attr.replace('_', '') + ch] = value
+        if query:
+            link += '&' + urlencode(query).replace('=True', '')
+    else:
+        link = 'https://e-stim.online/connect/?' + key.decode('ascii')
+
+    logger.info('Link: ' + link)
 
     send_data(sock, e2b.cmd(b''))
 
@@ -504,21 +521,22 @@ def filter_blocked(cmd, e2b, options):
         for ch in ('A', 'B'):
             max_ = getattr(options, 'max_level_' + ch.lower())
             if max_ and cmd.startswith(ch.encode('ascii')):
-                remaining = max_ - e2b.last_status.get(ch, 0)
-                if remaining <= 0:
-                    if (
-                        cmd[1:2] == b'+'
-                    ) or (
-                        cmd[1:2] not in (b'-', b'+') and
-                        int(cmd[1:]) > max_
-                    ):
-                        logger.error(
-                            'Prevented power level increase on channel ' + ch
-                        )
-                        return
-                if cmd[1:2] not in (b'-', b'+') and int(cmd[1:]) > max_:
+                blocked = None
+                if cmd[1:2] == b'+':
+                    if max_ - e2b.last_status.get(ch, 0) <= 0:
+                        blocked = e2b.last_status.get(ch, 0) + 1
+                elif cmd[1:2] != b'-':
+                    level = int(cmd[1:])
+                    if level > max_ and (not options.lv_mode or level <= 100):
+                        blocked = int(cmd[1:])
+                if blocked is not None:
+                    logger.error((
+                        'Blocked power level increase to %s%% on channel ' +
+                        '%s, limited to %s instead'
+                    ) % (blocked, ch, max_))
                     # If going past the limit max out to what's allowed
-                    return ('%s%s' % (ch, max_)).encode('ascii')
+                    e2b.cmd(('%s%s' % (ch, max_)).encode('ascii'))
+                    return
         return cmd
 
 
@@ -669,13 +687,45 @@ if __name__ == '__main__':
         help='Reconnect to a previously acquired key'
     )
     parser.add_argument(
-        '--lv-mode', '-lv', action='store_true',
-        help='Required for Lv style mode'
+        '--debug', '-d', action='store_true',
+        help='Change log level to debug'
     )
 
     parser.add_argument(
-        '--debug', '-d', action='store_true',
-        help='Change log level to debug'
+        '--lv-mode', '-lv', action='store_true',
+        help='Required for Lv style mode'
+    )
+    parser.add_argument(
+        '--no-a', '-na', action='store_true',
+        help='Hide channel A in Lv mode link'
+    )
+    parser.add_argument(
+        '--no-b', '-nb', action='store_true',
+        help='Hide channel B in Lv mode link'
+    )
+    parser.add_argument(
+        '--label-a', '-la',
+        help='Give channel A a more descriptin label in Lv mode link'
+    )
+    parser.add_argument(
+        '--label-b', '-lb',
+        help='Give channel B a more descriptin label in Lv mode link'
+    )
+    parser.add_argument(
+        '--min-range-a', '-minra', type=int,
+        help='Set default minimum range for channel A in Lv mode link'
+    )
+    parser.add_argument(
+        '--min-range-b', '-minrb', type=int,
+        help='Set default minimum range for channel A in Lv mode link'
+    )
+    parser.add_argument(
+        '--max-range-a', '-maxra', type=int,
+        help='Set default maximum range for channel A in Lv mode link'
+    )
+    parser.add_argument(
+        '--max-range-b', '-maxrb', type=int,
+        help='Set default maximum range for channel A in Lv mode link'
     )
 
     options = parser.parse_args()
