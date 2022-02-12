@@ -282,8 +282,8 @@ button {
             <div class="controlsButtons">
                 <button name="float">Float</button>
                 <button name="loop">Loop</button>
-                <button name="minRange">Min Range</button>
                 <button name="maxRange">Max Range</button>
+                <button name="minRange">Min Range</button>
                 <div>
                     A: <span class="unitA">0</span>%<br />
                     B: <span class="unitB">0</span>%<br />
@@ -307,6 +307,10 @@ button {
         wsLastSent = {
             A: '',
             B: ''
+        }
+        wsLastSentSeries = {
+            A: [],
+            B: []
         }
         wsLastUnitStatus = +new Date(),
         customCmdsEnabled = false;
@@ -559,6 +563,8 @@ button {
                             if (maxLevels[ch] < 100) canRise = true;
                         }
                     });
+                } else {
+                    msg.push('The reason for a minimum is that too low levels may not be felt');
                 }
                 if (canRise) msg.push('You can ask the remote user to raise limits');
                 setMessage(msg.join('\n\n'));
@@ -716,12 +722,13 @@ button {
 
             if (wsConnected) {
                 let toSend = el.name + value;
-                if (recordingLoop[el.name] || (wsLastSent[el.name] != toSend && (mode != 'loop' || !customCmdsEnabled))) {
+                if (recordingLoop[el.name] || (wsLastSent[el.name] != toSend && (mode != 'loop' || !customCmdsEnabled || wsLastSentSeries[el.name] != series[el.name]))) {
                     if (mode == 'float' && customCmdsEnabled) {
                         ws.send(el.name + '202');
                     }
                     ws.send(el.name + value);
                     wsLastSent[el.name] = toSend;
+                    wsLastSentSeries[el.name] = series[el.name];
                 }
                 if ((+new Date() - wsLastUnitStatus) >= 3000) {
                     setMessage('No data received for 3s, unit may be paused or unplugged', 1000);
